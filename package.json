@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node node_modules/n8n/bin/n8n"
+    "start": "n8n"
   },
   "dependencies": {
     "n8n": "^1.20.0"
