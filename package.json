@@ -1,0 +1,14 @@
+{
+  "name": "n8n-agent-host",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "n8n"
+  },
+  "dependencies": {
+    "n8n": "^1.20.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
