@@ -1,0 +1,215 @@
+{
+  "name": "LinkedIn Personal Content Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19yEPdvT1MWBVh2Iybb56us3smSiDTqXv0z9pACnc3Tw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "linkedin_personal_content_automation",
+          "mode": "name"
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "name": "Read Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        720,
+        -144
+      ],
+      "id": "18f87c0c-0c08-44a2-86a3-05c555415290",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rATGpP26cSYOmGJJ",
+          "name": "Google Sheets connected"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.filter(i => i.json.status?.toLowerCase() === 'pending').slice(0, 1);"
+      },
+      "name": "Pick One Pending Post",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        912,
+        -144
+      ],
+      "id": "2ad06ad5-7e54-4cb6-9cfc-2d202a118356"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyCI74bdMuSRzKJlKohVjhGWEBjfgI7OeTM"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Create a professional LinkedIn post using the details below.\\n\\nTitle: Java Developer Internship\\nCompany: Infosys\\nRole: Java Intern\\nType: Internship\\nLocation: Bangalore\\nSalary: ₹15,000/month\\nDescription: Looking for engineering students with basic Java, OOPs, and problem-solving skills. Freshers can apply.\\nApply Link: https://example.com/apply-java-intern\\nCTA: Comment \\\"Interested\\\"\\n\\nTone: helpful, human, non-promotional. Keep it concise. Do NOT use placeholders, variables, or template syntax in the output.\"\n        }\n      ]\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "name": "Generate Caption",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        -144
+      ],
+      "id": "33897132-1218-47f0-a0ae-3a50d18af4b9"
+    },
+    {
+      "parameters": {
+        "chatId": "@techstuffyworld",
+        "text": "=🚀 Internship Opportunity at {{ $json.company }}\n{{ $json.final_caption.split('\\n').slice(0,4).join('\\n') }}\nJob Description :\n{{ $json.description }}\n\n📍 Location: {{ $json.location }}\n💼 Role: {{ $json.role }}\n💰 Stipend: {{ $json.salary }}\n\n👉 Apply here: {{ $json.apply_link }}\n\n💬 Interested? Comment \"Interested\" below 👇 & for regular Updates join telegram channel 👇\n👉 {{ $json.channel_link }}\n\n#Internship #Jobs #{{ $json.company }} #Freshers #CareerUpdates\n",
+        "additionalFields": {
+          "parse_mode": "None"
+        }
+      },
+      "name": "Notify via Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        -144
+      ],
+      "id": "77c75781-957f-446f-9e76-05f934b0417d",
+      "webhookId": "da5cfce1-36c2-4520-ab63-2172296c059c",
+      "credentials": {
+        "telegramApi": {
+          "id": "z2himbpDkKyd7vZP",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// 1. Get caption from Gemini\nconst caption =\n  $items(\"Generate Caption\")[0].json.candidates[0].content.parts[0].text;\n\n// 2. Get data from Google Sheet\nconst sheetItem = $items(\"Read Google Sheet\")[0].json;\n\n// 3. Return combined result\nreturn [\n  {\n    json: {\n      final_caption: caption,\n      image_url: sheetItem.image_url,\n      apply_link: sheetItem.apply_link,\n      cta: sheetItem.cta,\n      company: sheetItem.company,\n      title: sheetItem.title,\n      location: sheetItem.location,\n      salary: sheetItem.salary,\n      role: sheetItem.role,\n      description: sheetItem.description,\n      channel_link: sheetItem.channel_link\n    },\n  },\n];\n"
+      },
+      "name": "Combine Caption + googlesheetImage",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        -144
+      ],
+      "id": "d5735ba8-51f9-4417-b304-54ba8c3f05be"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        -144
+      ],
+      "id": "75634738-0ec5-472b-9a8f-7b8f12d389d7",
+      "name": "Schedule Trigger",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Pick One Pending Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick One Pending Post": {
+      "main": [
+        [
+          {
+            "node": "Generate Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Caption": {
+      "main": [
+        [
+          {
+            "node": "Combine Caption + googlesheetImage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Caption + googlesheetImage": {
+      "main": [
+        [
+          {
+            "node": "Notify via Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "427c0670-3bd7-47e9-9cd7-23bdc62426b0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e9e8b521df59653ec224fb636a25868fa957f186ee6e879191aa1e0ff6d1f8d2"
+  },
+  "id": "zJ48_ovrAolA8MwO3h4V7",
+  "tags": []
+}
